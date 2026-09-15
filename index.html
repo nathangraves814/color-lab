@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Color Lab</title>
+<meta name="description" content="Mix real paint colours and hear their names.">
+<meta name="theme-color" content="#fff7ef">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Color Lab">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <div class="splash-blobs" aria-hidden="true">
+      <i style="--c:#e0202a"></i><i style="--c:#ffe61a"></i><i style="--c:#1a4fdb"></i>
+    </div>
+    <h1>Color Lab</h1>
+    <p>Mix colors and hear their names</p>
+    <button id="btn-start" class="big-btn">Let's mix!</button>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div class="brand" id="brand"><span class="dot"></span>Color Lab</div>
+    <div class="tools">
+      <button id="btn-sound" class="tool" aria-pressed="true" aria-label="Sound on or off"><span id="sound-icon">🔊</span></button>
+      <button id="btn-missions" class="tool" aria-label="Missions">🎯<span class="badge" id="mission-count">0</span></button>
+      <button id="btn-album" class="tool" aria-label="Colors I found">⭐<span class="badge" id="album-count">0</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="stage">
+      <div class="recipe" id="recipe">
+        <button class="slot" data-i="0" aria-label="First color"></button>
+        <span class="op">+</span>
+        <button class="slot" data-i="1" aria-label="Second color"></button>
+        <span class="op op-optional">+</span>
+        <button class="slot optional" data-i="2" aria-label="Third color (optional)"></button>
+      </div>
+
+      <div class="result">
+        <div class="bowl-wrap">
+          <div class="bowl" id="bowl"><span class="bowl-hint" id="bowl-hint">?</span></div>
+          <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+        </div>
+        <div class="label" id="label">
+          <span class="emoji" id="result-emoji"></span>
+          <span class="name" id="result-name">Tap two colors</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-say" class="act" disabled>🔊 Say it</button>
+        <button id="btn-reset" class="act">↺ Start over</button>
+      </div>
+    </section>
+
+    <section class="palette-wrap">
+      <div class="palette" id="palette"></div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="sheet-title"></h2>
+      <button id="sheet-close" class="tool" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<div class="fly-layer" id="fly-layer" aria-hidden="true"></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
