@@ -7,7 +7,7 @@
    The earlier version cached everything cache-first, which meant a phone that had
    loaded the app once would keep running that build forever. */
 
-var VERSION = '1.3.1';
+var VERSION = '1.4.0';
 var CACHE = 'color-lab-' + VERSION;
 
 var SHELL = [

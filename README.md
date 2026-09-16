@@ -23,8 +23,18 @@ Each paint is stored as a pigment recipe: an RYB chroma vector plus separate whi
 the hue stays as strong as the paints that went in, converts RYB to RGB by trilinear
 blending between eight tuned cube corners, then applies the tint and shade.
 
-Result names come from a list of 79 colors. The nearest one is found by CIELAB
-distance, with names a young child already knows weighted to win ties.
+Result names come from a list of 121 colours that walks the 12-hue RYB wheel (red,
+vermilion, orange, amber, yellow, chartreuse, green, teal, blue, indigo, purple,
+magenta) and gives each hue a tint, a shade and a muted tone, plus browns and neutrals.
+The nearest name is found by CIELAB distance, with words a young child already knows
+weighted slightly to win ties.
+
+**A mix of two different paints can never be named after one of its own ingredients.**
+Without that rule the nearest name for red + orange is "red", which teaches her nothing;
+those names are struck from the running so the mix has to resolve to a third word
+(vermilion). Mixing a paint with itself is not a mix, so it keeps its own name.
+
+`tools/audit-colors.py` checks this over all 2300 two- and three-paint combinations.
 
 ## The voice
 

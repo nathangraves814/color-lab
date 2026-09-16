@@ -7,7 +7,7 @@
 /* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
    dropped. This string is rendered bottom-right: if it has not changed on the
    device, the device is still running the old build. */
-var VERSION = 'v1.3.1';
+var VERSION = 'v1.4.0';
 
 /* ---------------------------------------------------------------- mixing */
 
@@ -107,37 +107,49 @@ PAINTS.forEach(function (p) { p.hex = toHex(mixPaints([p])); BY_ID[p.id] = p; })
 /* ------------------------------------------------------------- the names */
 
 var NAMES = [
-  ['red','#e0202a','🍎'],['scarlet','#c81912','🌹'],['crimson','#a5102a','🍒'],
-  ['dark red','#7d1418','🍷'],['maroon','#5e1a1e','🫘'],['brick red','#a5452f','🧱'],
-  ['pink','#f4a0b0','🌸'],['light pink','#f9cdd8','🌷'],['hot pink','#f0428c','💗'],
-  ['rose','#d94f6e','🌺'],['salmon','#f0857a','🐟'],['coral','#f4796a','🪸'],
-  ['peach','#f9b48e','🍑'],['blush','#efc0b6','🌼'],['magenta','#c2185b','💐'],
-  ['orange','#f57c11','🍊'],['dark orange','#c25a08','🎃'],['light orange','#fbb268','🥕'],
-  ['apricot','#f5b35e','🥭'],['amber','#e8962a','🍯'],['rust','#9c4a1a','🍂'],
-  ['yellow','#ffe61a','🌻'],['light yellow','#fbef9a','🌼'],['lemon','#f2ec52','🍋'],
-  ['gold','#e8b31f','🏅'],['mustard','#c8a01c','🌾'],['cream','#f7f0d8','🍦'],
-  ['olive','#7d7a1e','🫒'],['khaki','#b8a563','🪨'],
-  ['green','#12a148','🌿'],['light green','#7ed194','🍏'],['dark green','#136b30','🌲'],
-  ['lime','#a8d41c','🦎'],['mint','#9adfb8','🍃'],['forest green','#1c4f26','🌳'],
-  ['grass green','#4caf28','🌱'],['sea green','#1d9e7a','🌊'],['emerald','#12a67a','💎'],
-  ['sage','#a3b58c','🪴'],['olive green','#5c6b24','🥬'],
-  ['blue','#1a4fdb','💧'],['light blue','#8ca9ee','🩵'],['sky blue','#63b8e8','☁️'],
-  ['dark blue','#152f77','🌌'],['navy','#10204f','⚓'],['royal blue','#2247b8','👑'],
-  ['teal','#127d8e','🐬'],['turquoise','#31c0c4','🐠'],['cyan','#5fd8e0','💦'],
-  ['periwinkle','#9aa8e8','🦋'],['steel blue','#5a7fa5','🔩'],['slate blue','#4a5c7d','🗿'],
-  ['purple','#7a2a91','🍇'],['light purple','#b98ac6','🪻'],['lavender','#cdb4de','💜'],
-  ['violet','#6b34c4','🔮'],['plum','#6e2a55','🫐'],['orchid','#bd62c4','🌸'],
-  ['mauve','#a58399','🌫️'],['grape','#4e1f6b','🍇'],
-  ['brown','#8a5228','🐻'],['light brown','#b5804f','🪵'],['dark brown','#4f2f18','🌰'],
-  ['chocolate','#5e3a20','🍫'],['caramel','#b0752f','🍮'],['tan','#cda877','🥔'],
-  ['beige','#e0d0ad','🍞'],['taupe','#8a7a68','🪨'],['copper','#b06a35','🥉'],
-  ['mud brown','#6b4a2a','🪱'],['olive brown','#6b5c2a','🍄'],
-  ['gray','#949394','🐘'],['light gray','#c8c7c8','🌫️'],['dark gray','#5c5b5c','🪨'],
-  ['silver','#d6d5d6','🥈'],['charcoal','#3a393a','⬛'],['slate','#6e7278','🗻'],
-  ['white','#fdfdfd','☁️'],['black','#151515','🌑']
+  ['red','#e0202a','🍎'],['crimson','#a5102a','🍒'],['cherry red','#c4121f','🍒'],
+  ['dark red','#7d1418','🍷'],['maroon','#5e1a1e','🫘'],['burgundy','#6e1b33','🍷'],
+  ['pink','#f4a0b0','🌸'],['pale purple','#e3d4ec','🪻'],['light pink','#f9cdd8','🌷'],['rose','#d94f6e','🌺'],
+  ['dusty rose','#c08490','🌾'],['antique rose','#c56c8e','🌹'],['blush','#efc0b6','🌼'],['melon','#eda98c','🍈'],['vermilion','#e0451f','🔥'],
+  ['scarlet','#c81912','🌹'],['brick red','#a5452f','🧱'],['coral','#f4796a','🪸'],
+  ['salmon','#f0857a','🐟'],['terracotta','#c76a4a','🏺'],['rust','#9c4a1a','🍂'],
+  ['orange','#f57c11','🍊'],['tangerine','#f6883a','🍊'],['dark orange','#c25a08','🎃'],['light orange','#fbb268','🥕'],
+  ['peach','#f9b48e','🍑'],['apricot','#f5b35e','🥭'],['pumpkin','#e2701a','🎃'],
+  ['amber','#e8962a','🍯'],['marigold','#eaa221','🌼'],['gold','#e8b31f','🏅'],
+  ['butterscotch','#d99a4e','🍬'],['caramel','#b0752f','🍮'],['bronze','#94662a','🥉'],
+  ['yellow','#ffe61a','🌻'],['sunflower','#ffd400','🌻'],['lemon','#f2ec52','🍋'],['light yellow','#fbef9a','🌼'],
+  ['cream','#f7f0d8','🍦'],['mustard','#c8a01c','🌾'],['khaki','#b8a563','🪨'],
+  ['olive','#7d7a1e','🫒'],['chartreuse','#b5d61c','🦎'],['lime','#a8d41c','🍈'],
+  ['pear green','#c4d44e','🍐'],['moss green','#7a8a3c','🌾'],['olive green','#5c6b24','🥬'],
+  ['green','#12a148','🌿'],['grass green','#4caf28','🌱'],['apple green','#6faa25','🍏'],['light green','#7ed194','🍏'],
+  ['mint','#9adfb8','🍃'],['pale green','#cfeddd','🌱'],['sage','#a3b58c','🪴'],['fern green','#4e8c4a','🌿'],
+  ['dark green','#136b30','🌲'],['forest green','#1c4f26','🌳'],['teal','#127d8e','🐬'],
+  ['turquoise','#31c0c4','🐠'],['aqua','#6fd8d4','💦'],['seafoam','#a8d8c8','🫧'],
+  ['sea green','#1d9e7a','🌊'],['emerald','#12a67a','💎'],['jade','#4aa583','🪷'],
+  ['pine green','#14574e','🌲'],['blue','#1a4fdb','💧'],['royal blue','#2247b8','👑'],['cobalt','#3a62c8','🔷'],
+  ['cerulean','#2a7fc4','🌊'],['sky blue','#63b8e8','☁️'],['powder blue','#cfe0f2','🩵'],['light blue','#8ca9ee','🩵'],
+  ['cornflower','#6f92e0','🌸'],['denim','#4a6fa0','👖'],['steel blue','#5a7fa5','🔩'],
+  ['dark blue','#152f77','🌌'],['navy','#10204f','⚓'],['indigo','#3a2a8c','🔮'],
+  ['violet','#6b34c4','🔮'],['periwinkle','#9aa8e8','🦋'],['slate blue','#4a5c7d','🗿'],
+  ['midnight blue','#141c3a','🌙'],['purple','#7a2a91','🍇'],['amethyst','#9a6bc4','💎'],
+  ['light purple','#b98ac6','🪻'],['lilac','#c3a3d8','🪻'],['lavender','#cdb4de','💜'],
+  ['mauve','#a58399','🌫️'],['grape','#4e1f6b','🍇'],['eggplant','#4a2352','🍆'],
+  ['magenta','#c2185b','💐'],['fuchsia','#d6449b','💗'],['hot pink','#f0428c','💗'],
+  ['orchid','#bd62c4','🌸'],['raspberry','#b0295c','🫐'],['plum','#6e2a55','🫐'],
+  ['wine','#5e1f36','🍷'],['brown','#8a5228','🐻'],['light brown','#b5804f','🪵'],
+  ['dark brown','#4f2f18','🌰'],['chocolate','#5e3a20','🍫'],['sienna','#8a4a2a','🧱'],
+  ['copper','#b06a35','🥉'],['ochre','#b08030','🟫'],['clay','#a56a52','🏺'],['tan','#cda877','🥔'],
+  ['sand','#ddc9a0','🏖️'],['beige','#e0d0ad','🍞'],['taupe','#8a7a68','🪨'],
+  ['mud brown','#6b4a2a','🪱'],['olive brown','#6b5c2a','🍄'],['white','#fdfdfd','☁️'],
+  ['ivory','#f5f2e8','🥚'],['silver','#d6d5d6','🥈'],['light gray','#c8c7c8','🌫️'],
+  ['pewter','#8e9092','🔩'],['gray','#949394','🐘'],['slate','#6e7278','🗻'],
+  ['dark gray','#5c5b5c','🪨'],['charcoal','#3a393a','⬛'],['black','#151515','🌑']
 ];
 // Words a five-year-old already owns get pulled toward; the fancy ones only win
-// when they're clearly, unmistakably right.
+// when they're clearly, unmistakably right. The list above walks the 12-hue RYB
+// wheel (red, vermilion, orange, amber, yellow, chartreuse, green, teal, blue,
+// indigo, purple, magenta) with a tint, a shade and a muted tone for each, so
+// there is always a distinct word waiting between any two paints.
 var CORE = 'red blue yellow green orange purple pink brown gray white black'.split(' ');
 var FAMILIAR = ('light blue,dark blue,light green,dark green,light pink,dark red,light purple,navy,teal,' +
   'turquoise,lime,gold,tan,silver,peach,mint,lavender,light gray,dark gray,dark brown,light brown,' +
@@ -155,22 +167,27 @@ function rgbToLab(rgb) {
   return [116*fy - 16, 500*(fx - fy), 200*(fy - fz)];
 }
 var NAMED = NAMES.map(function (n) {
-  var bonus = CORE.indexOf(n[0]) >= 0 ? 8 : (FAMILIAR.indexOf(n[0]) >= 0 ? 5 : 0);
+  var bonus = CORE.indexOf(n[0]) >= 0 ? 4 : (FAMILIAR.indexOf(n[0]) >= 0 ? 2 : 0);
   return { name: n[0], hex: n[1], emoji: n[2], lab: rgbToLab(hexToRgb(n[1])), bonus: bonus };
 });
 function deltaE(a, b) {
   return Math.sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]));
 }
-function nameOf(rgb) {
+/* `banned` is the set of paint names that went into the mix. Mixing two different
+   colours has to produce a third name, otherwise red + orange comes back "red" and
+   she learns nothing from it, so those names are taken out of the running. */
+function nameOf(rgb, banned) {
   var lab = rgbToLab(rgb), chroma = Math.sqrt(lab[1]*lab[1] + lab[2]*lab[2]);
-  var best = NAMED[0], bestScore = Infinity;
+  var best = null, bestScore = Infinity, fallback = NAMED[0], fallbackScore = Infinity;
   for (var i = 0; i < NAMED.length; i++) {
     var n = NAMED[i];
     var bonus = (ACHRO_SET[n.name] && chroma > 10) ? 0 : n.bonus;
     var score = deltaE(lab, n.lab) - bonus;
+    if (score < fallbackScore) { fallbackScore = score; fallback = n; }
+    if (banned && banned[n.name]) continue;
     if (score < bestScore) { bestScore = score; best = n; }
   }
-  return best;
+  return best || fallback;
 }
 
 /* ----------------------------------------------------------- the missions */
@@ -313,12 +330,25 @@ var els = {};
 
 function filled() { return slots.slice(0, mode).filter(Boolean); }
 
+/* The album stores nothing but paint ids and re-derives the rest through here, so
+   renaming a colour updates every mix she has already found instead of stranding
+   old entries under their old names. */
+function mixFromIds(ids) {
+  var rgb = mixPaints(ids.map(function (id) { return BY_ID[id]; }));
+  // Same paint twice is not a mix, so it keeps its own name.
+  var distinct = ids.filter(function (v, i) { return ids.indexOf(v) === i; });
+  var banned = null;
+  if (distinct.length > 1) {
+    banned = {};
+    distinct.forEach(function (id) { banned[BY_ID[id].name] = true; });
+  }
+  var n = nameOf(rgb, banned);
+  return { hex: toHex(rgb), name: n.name, emoji: n.emoji, lab: rgbToLab(rgb), ids: ids.slice() };
+}
+
 function recompute() {
   var ids = filled();
-  if (ids.length < 2) { current = null; return; }
-  var rgb = mixPaints(ids.map(function (id) { return BY_ID[id]; }));
-  var n = nameOf(rgb);
-  current = { hex: toHex(rgb), name: n.name, emoji: n.emoji, lab: rgbToLab(rgb), ids: ids.slice() };
+  current = ids.length < 2 ? null : mixFromIds(ids);
 }
 
 function sentence() {
@@ -427,7 +457,7 @@ function addPaint(id, sourceEl) {
     els.bowl.classList.remove('swirl'); void els.bowl.offsetWidth; els.bowl.classList.add('swirl');
     els.label.classList.remove('bounce'); void els.label.offsetWidth; els.label.classList.add('bounce');
     if (outcome.fresh || outcome.won.length) sparkle();
-    if (isFinal) sayResult(snap, outcome.won.length > 0);
+    if (isFinal) sayResult(snap, id, outcome.won.length > 0);
   }, sourceEl ? 340 : 0);
 }
 
@@ -437,7 +467,7 @@ function recordMix(mix) {
   var key = mix.ids.slice().sort().join('+');
   var fresh = !album[key];
   if (fresh) {
-    album[key] = { hex: mix.hex, name: mix.name, emoji: mix.emoji, ids: mix.ids.slice() };
+    album[key] = { ids: mix.ids.slice() };
     save(K_ALBUM, album);
   }
   var won = [];
@@ -459,13 +489,17 @@ function clearSlot(i) {
   recompute(); render();
 }
 
-/* Just the answer. Played when she drops in the last colour the recipe has room for,
-   because she has already heard each paint named as she tapped it. */
-function sayResult(mix, won) {
+/* The last colour of a recipe: name it like any other tap, then give the answer.
+   Both go out as one run of clips so the second does not cut the first off. */
+function sayResult(mix, finalId, won) {
   if (!mix) return;
-  var clips = [resultClip(mix.name)];
-  if (won) clips.push(uiClip('mission-complete'));
-  say(clips, "That's " + mix.name + '!' + (won ? ' Mission complete!' : ''));
+  var clips = [];
+  var text = '';
+  if (finalId) { clips.push(paintClip(finalId)); text += BY_ID[finalId].name + '. '; }
+  clips.push(resultClip(mix.name));
+  text += "That's " + mix.name + '!';
+  if (won) { clips.push(uiClip('mission-complete')); text += ' Mission complete!'; }
+  say(clips, text);
 }
 
 /* The whole recipe read back: "Blue. Yellow. That's green!" This is what the
@@ -519,7 +553,9 @@ function showAlbum() {
   if (!keys.length) {
     html = '<p class="empty-note">No colors yet. Mix two paints and they will show up here!</p>';
   } else {
-    var items = keys.map(function (k) { return album[k]; });
+    var items = keys.map(function (k) { return album[k]; })
+      .filter(function (e) { return e && e.ids && e.ids.length; })
+      .map(function (e) { return mixFromIds(e.ids); });
     items.sort(function (a, b) {
       var la = rgbToLab(hexToRgb(a.hex)), lb = rgbToLab(hexToRgb(b.hex));
       return Math.atan2(la[2], la[1]) - Math.atan2(lb[2], lb[1]);
