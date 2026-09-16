@@ -7,7 +7,7 @@
 /* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
    dropped. This string is rendered bottom-right: if it has not changed on the
    device, the device is still running the old build. */
-var VERSION = 'v1.4.0';
+var VERSION = 'v1.4.1';
 
 /* ---------------------------------------------------------------- mixing */
 

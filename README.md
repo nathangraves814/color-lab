@@ -52,6 +52,13 @@ Each tap names only the paint she just added. The answer is read when she fills 
 slot the recipe has room for, which depends on whether the 2/3 toggle is set to two
 colours or three. Say it reads the whole recipe back: "Blue. Yellow. That's green!"
 
+The generator refuses to build if any word has no pronunciation. misaki's dictionary does
+not carry every colour name, and an unknown word becomes a placeholder that synthesises as
+**silence**, so the clip says "That's ..." and stops without erroring. Three names hit this
+(seafoam, terracotta, ochre); the `SPOKEN_AS` map in the generator feeds the synthesiser a
+spelling it can say while the app keeps the real one. Add to that map if the build reports
+a word it cannot pronounce.
+
 To re-cut the pack in one of Kokoro's other 53 voices, see the setup notes at the top of
 `tools/generate-voice.py` and run:
 

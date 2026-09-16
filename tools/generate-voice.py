@@ -48,6 +48,22 @@ UI_PHRASES = {
 # Two readings of every result so a hundredth mix does not sound like the first.
 RESULT_TEMPLATES = ["That's {}!", "You made {}!"]
 
+# Words misaki's dictionary does not carry. Left alone it emits a placeholder that
+# synthesises as silence, so the clip says "That's ..." and stops. The app keeps the
+# real spelling; only what we hand the synthesiser changes. Anything added here must
+# survive the check in phonemes_for() below.
+SPOKEN_AS = {
+    'seafoam':    'sea foam',
+    'terracotta': 'terra cotta',
+    'ochre':      'ocher',
+}
+
+
+def spoken(text):
+    for word, say_as in SPOKEN_AS.items():
+        text = re.sub(r'\b%s\b' % re.escape(word), say_as, text, flags=re.I)
+    return text
+
 
 def slug(s):
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode()
@@ -61,6 +77,17 @@ def read_app_lists():
     if not paints or not names:
         sys.exit('Could not parse app.js. Did the PAINTS/NAMES format change?')
     return paints, names
+
+
+def phonemes_for(g2p, text):
+    """Phonemise, and refuse to return anything with a word silently missing."""
+    ps, tokens = g2p(spoken(text))
+    dropped = [t.text for t in tokens
+               if re.search(r'[A-Za-z]', t.text or '') and not t.phonemes]
+    if dropped or '\u2753' in ps:
+        raise ValueError('no pronunciation for %s in %r (add it to SPOKEN_AS)'
+                         % (dropped or ['?'], text))
+    return ps
 
 
 def encode(wav_path, out_path):
@@ -104,8 +131,18 @@ def main():
     fade = int(SR * 0.006)
     window = np.linspace(0, 1, fade, dtype=np.float32)
     written = []
+    # Fail before synthesising anything rather than shipping a pack with silent clips.
+    problems = []
+    for rel, text in jobs:
+        try:
+            phonemes_for(g2p, text)
+        except ValueError as err:
+            problems.append(str(err))
+    if problems:
+        sys.exit('Cannot pronounce %d phrase(s):\n  ' % len(problems) + '\n  '.join(problems))
+
     for n, (rel, text) in enumerate(jobs, 1):
-        phonemes, _ = g2p(text)
+        phonemes = phonemes_for(g2p, text)
         samples, _ = kok.create(phonemes, voice=args.voice, speed=args.speed,
                                 is_phonemes=True, trim=True)
         a = np.asarray(samples, dtype=np.float32)
