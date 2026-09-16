@@ -4,6 +4,11 @@
 (function () {
 'use strict';
 
+/* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
+   dropped. This string is rendered bottom-right: if it has not changed on the
+   device, the device is still running the old build. */
+var VERSION = 'v1.3.0';
+
 /* ---------------------------------------------------------------- mixing */
 
 // RYB cube corners -> display RGB. Trilinear blend between them (Gossett & Chen),
@@ -569,6 +574,8 @@ function init() {
   };
 
   buildPalette();
+  var stamp = $('build');
+  if (stamp) stamp.textContent = VERSION;
 
   els.palette.addEventListener('click', function (e) {
     var btn = e.target.closest('.paint');
@@ -619,8 +626,19 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else init();
 
 if ('serviceWorker' in navigator) {
+  // updateViaCache:'none' stops the browser serving a cached sw.js, which is how a
+  // device can otherwise pin itself to an old build indefinitely.
+  var hadController = !!navigator.serviceWorker.controller;
+  var reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadController || reloading) return;   // first install needs no reload
+    reloading = true;
+    location.reload();
+  });
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(function (reg) { reg.update(); })
+      .catch(function () {});
   });
 }
 })();

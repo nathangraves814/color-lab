@@ -179,3 +179,11 @@ body[data-mode="3"] .mode-thumb{transform:translateX(100%);}
 /* two-colour mode hides the third slot and its plus sign */
 body[data-mode="2"] .slot.optional,
 body[data-mode="2"] .op-optional{display:none;}
+
+/* ---------- build stamp ---------- */
+/* Sits above the splash too, so the version is readable before tapping in.
+   pointer-events:none keeps it from ever swallowing one of her taps. */
+.build{position:fixed;z-index:60;right:calc(8px + env(safe-area-inset-right));
+  bottom:calc(5px + env(safe-area-inset-bottom));
+  font-size:10px;font-weight:600;letter-spacing:.02em;
+  color:var(--muted);opacity:.45;pointer-events:none;user-select:none;}

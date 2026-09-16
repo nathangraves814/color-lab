@@ -50,6 +50,24 @@ To re-cut the pack in one of Kokoro's other 53 voices, see the setup notes at th
 The script reads the word lists out of `app.js`, so the clips cannot drift from what the
 app actually says.
 
+## Versioning and updates
+
+The build number is rendered faintly in the bottom-right corner. If a device does not
+show the version you just deployed, it is still running an old build.
+
+Two strategies share one service worker. The shell (html/css/js) is **network-first**, so
+code changes reach a device on its next online load. The voice clips are **cache-first**,
+since ~190 immutable files should never cost a round trip. The service worker is
+registered with `updateViaCache: 'none'` and installs its shell with `{cache: 'reload'}`,
+because a browser serving a cached `sw.js` (or a fresh worker installing a stale shell
+through the HTTP cache) will otherwise pin a device to an old build indefinitely. When a
+new worker takes over, the page reloads itself once.
+
+To cut a release, bump **both** `VERSION` in `app.js` (what gets displayed) and `VERSION`
+in `sw.js` (what names the cache). They are deliberately separate: the displayed string
+lives in `app.js` so that it reports the freshness of the code actually running, not of
+some other file that happened to load.
+
 ## Adding it to an iPad
 
 Open the link in Safari, tap Share, then Add to Home Screen.
