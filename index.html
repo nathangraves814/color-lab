@@ -47,28 +47,30 @@
         </button>
       </div>
 
-      <div class="recipe" id="recipe">
-        <button class="slot" data-i="0" aria-label="First color"></button>
-        <span class="op">+</span>
-        <button class="slot" data-i="1" aria-label="Second color"></button>
-        <span class="op op-optional">+</span>
-        <button class="slot optional" data-i="2" aria-label="Third color (optional)"></button>
-      </div>
-
-      <div class="result">
-        <div class="bowl-wrap">
-          <div class="bowl" id="bowl"><span class="bowl-hint" id="bowl-hint">?</span></div>
-          <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+      <div class="stage-center">
+        <div class="recipe" id="recipe">
+          <button class="slot" data-i="0" aria-label="First color"></button>
+          <span class="op">+</span>
+          <button class="slot" data-i="1" aria-label="Second color"></button>
+          <span class="op op-optional">+</span>
+          <button class="slot optional" data-i="2" aria-label="Third color (optional)"></button>
         </div>
-        <div class="label" id="label">
-          <span class="emoji" id="result-emoji"></span>
-          <span class="name" id="result-name">Tap two colors</span>
-        </div>
-      </div>
 
-      <div class="actions">
-        <button id="btn-say" class="act" disabled>🔊 Say it</button>
-        <button id="btn-reset" class="act">↺ Start over</button>
+        <div class="result">
+          <div class="bowl-wrap">
+            <div class="bowl" id="bowl"><span class="bowl-hint" id="bowl-hint">?</span></div>
+            <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+          </div>
+          <div class="label" id="label">
+            <span class="emoji" id="result-emoji"></span>
+            <span class="name" id="result-name">Tap two colors</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btn-say" class="act" disabled>🔊 Say it</button>
+          <button id="btn-reset" class="act">↺ Start over</button>
+        </div>
       </div>
     </section>
 

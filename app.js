@@ -206,7 +206,6 @@ var mode = load(K_MODE, 3) === 2 ? 2 : 3;   // how many colours she can stack
 var CLIP_GAP = 0.12;                 // seconds of air between stitched clips
 var audioCtx = null, gainNode = null;
 var buffers = {}, sources = [], playToken = 0;
-var lastSpoken = null;               // for the "Say it" button
 
 function slugOf(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 function paintClip(id) { return 'paints/' + id + '.m4a'; }
@@ -257,7 +256,6 @@ function speakFallback(text) {
 /* Play a run of clips back to back. `text` is both the screen-reader line and
    the fallback if the clips cannot be loaded. */
 function say(clips, text) {
-  lastSpoken = { clips: clips, text: text };
   var live = document.getElementById('live');
   if (live && text) live.textContent = text;
   if (!soundOn) return;
@@ -281,8 +279,6 @@ function say(clips, text) {
     });
   });
 }
-
-function sayAgain() { if (lastSpoken) say(lastSpoken.clips, lastSpoken.text); }
 
 /* Warm the cache in the background: the words she can tap first, then the rest. */
 function preloadVoice() {
@@ -414,8 +410,10 @@ function addPaint(id, sourceEl) {
   var outcome = recordMix(snap);
   var target = els.slots[slot];
 
+  // The last colour the recipe can hold gets the answer instead of its own name.
+  var isFinal = filled().length >= mode;
   if (sourceEl) flyDrop(sourceEl, target, BY_ID[id].hex);
-  if (filled().length < 2) say([paintClip(id)], BY_ID[id].name);
+  if (!isFinal) say([paintClip(id)], BY_ID[id].name);
 
   setTimeout(function () {
     render();
@@ -424,7 +422,7 @@ function addPaint(id, sourceEl) {
     els.bowl.classList.remove('swirl'); void els.bowl.offsetWidth; els.bowl.classList.add('swirl');
     els.label.classList.remove('bounce'); void els.label.offsetWidth; els.label.classList.add('bounce');
     if (outcome.fresh || outcome.won.length) sparkle();
-    sayMix(snap, outcome.won.length > 0);
+    if (isFinal) sayResult(snap, outcome.won.length > 0);
   }, sourceEl ? 340 : 0);
 }
 
@@ -456,7 +454,17 @@ function clearSlot(i) {
   recompute(); render();
 }
 
-/* "Blue. Yellow. That's green!" — the paints she picked, then the answer. */
+/* Just the answer. Played when she drops in the last colour the recipe has room for,
+   because she has already heard each paint named as she tapped it. */
+function sayResult(mix, won) {
+  if (!mix) return;
+  var clips = [resultClip(mix.name)];
+  if (won) clips.push(uiClip('mission-complete'));
+  say(clips, "That's " + mix.name + '!' + (won ? ' Mission complete!' : ''));
+}
+
+/* The whole recipe read back: "Blue. Yellow. That's green!" This is what the
+   Say it button does, and what replaying a mix from the album does. */
 function sayMix(mix, won) {
   if (!mix) return;
   var clips = mix.ids.map(paintClip);
@@ -570,7 +578,7 @@ function init() {
   $('btn-mode').addEventListener('click', function () { setMode(mode === 2 ? 3 : 2, true); });
 
   $('btn-reset').addEventListener('click', reset);
-  els.say.addEventListener('click', sayAgain);
+  els.say.addEventListener('click', function () { sayMix(current, false); });
   $('btn-album').addEventListener('click', showAlbum);
   $('btn-missions').addEventListener('click', showMissions);
   $('sheet-close').addEventListener('click', closeSheet);

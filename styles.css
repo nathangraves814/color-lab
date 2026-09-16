@@ -55,8 +55,11 @@ main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:clamp(4px
   padding:0 clamp(10px,2vw,22px) clamp(8px,1.6vh,18px);}
 
 /* ---------- stage ---------- */
-.stage{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:clamp(6px,1.4vh,16px);}
+.stage{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;}
+/* the toggle pins to the top of the stage; everything else centres in what is left,
+   so making the toggle bigger never pushes it into the result bubble */
+.stage-center{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:clamp(6px,1.4vh,16px);}
 .recipe{display:flex;align-items:center;gap:clamp(6px,1.4vmin,16px);}
 .op{font-size:clamp(20px,3.4vmin,34px);font-weight:800;color:var(--muted);}
 .slot{width:var(--slot);aspect-ratio:1;border-radius:50%;background:#fff;
@@ -158,14 +161,15 @@ main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:clamp(4px
 }
 
 /* ---------- 2 / 3 colour toggle ---------- */
-.mode-toggle{display:flex;justify-content:center;}
+.mode-toggle{flex:0 0 auto;display:flex;justify-content:center;
+  padding:clamp(2px,0.8vh,10px) 0 clamp(8px,2vh,24px);}
 .mode{position:relative;display:flex;align-items:center;gap:0;background:var(--card);
-  border-radius:999px;box-shadow:var(--shadow);padding:4px;isolation:isolate;}
-.mode-opt{position:relative;z-index:1;width:clamp(38px,5.4vmin,52px);
-  line-height:clamp(34px,4.8vmin,46px);text-align:center;font-weight:900;
-  font-size:clamp(17px,2.8vmin,25px);color:var(--muted);transition:color .2s;}
-.mode-thumb{position:absolute;z-index:0;top:4px;left:4px;
-  width:clamp(38px,5.4vmin,52px);height:clamp(34px,4.8vmin,46px);
+  border-radius:999px;box-shadow:var(--shadow);padding:5px;isolation:isolate;}
+.mode-opt{position:relative;z-index:1;width:clamp(48px,6.8vmin,66px);
+  line-height:clamp(43px,6.1vmin,59px);text-align:center;font-weight:900;
+  font-size:clamp(21px,3.5vmin,32px);color:var(--muted);transition:color .2s;}
+.mode-thumb{position:absolute;z-index:0;top:5px;left:5px;
+  width:clamp(48px,6.8vmin,66px);height:clamp(43px,6.1vmin,59px);
   border-radius:999px;background:var(--accent);
   transition:transform .24s cubic-bezier(.3,1.5,.5,1);}
 .mode:active{transform:translateY(2px);}

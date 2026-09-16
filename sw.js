@@ -1,6 +1,6 @@
 /* Cache everything on install so the app works with no wifi at all.
    Bump CACHE when files change and the old one is dropped on activate. */
-var CACHE = 'color-lab-v2';
+var CACHE = 'color-lab-v3';
 var ASSETS = [
   './', './index.html', './styles.css', './app.js',
   './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png',
