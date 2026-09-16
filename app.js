@@ -185,7 +185,8 @@ MISSIONS.forEach(function (m) { m.lab = rgbToLab(hexToRgb(m.hex)); });
 
 /* -------------------------------------------------------------- storage */
 
-var K_ALBUM = 'colorlab.album.v1', K_MISSIONS = 'colorlab.missions.v1', K_SOUND = 'colorlab.sound.v1';
+var K_ALBUM = 'colorlab.album.v1', K_MISSIONS = 'colorlab.missions.v1',
+    K_SOUND = 'colorlab.sound.v1', K_MODE = 'colorlab.mode.v1';
 function load(key, fallback) {
   try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
   catch (e) { return fallback; }
@@ -195,36 +196,110 @@ function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value
 var album = load(K_ALBUM, {});
 var missionsDone = load(K_MISSIONS, {});
 var soundOn = load(K_SOUND, true);
+var mode = load(K_MODE, 3) === 2 ? 2 : 3;   // how many colours she can stack
 
-/* --------------------------------------------------------------- speech */
+/* ---------------------------------------------------------------- voice */
+/* Pre-recorded clips, not live synthesis. iOS Safari hides its good voices from
+   speechSynthesis, so the whole vocabulary is baked into voice/ by
+   tools/generate-voice.py. speechSynthesis stays only as a fallback. */
 
-var voice = null;
-function pickVoice() {
-  if (!('speechSynthesis' in window)) return;
-  var vs = speechSynthesis.getVoices();
-  if (!vs.length) return;
-  var prefer = ['Samantha', 'Karen', 'Moira', 'Google US English', 'Google UK English Female'];
-  for (var i = 0; i < prefer.length; i++) {
-    var hit = vs.filter(function (v) { return v.name === prefer[i]; })[0];
-    if (hit) { voice = hit; return; }
-  }
-  voice = vs.filter(function (v) { return /^en[-_]/i.test(v.lang); })[0] || vs[0];
+var CLIP_GAP = 0.12;                 // seconds of air between stitched clips
+var audioCtx = null, gainNode = null;
+var buffers = {}, sources = [], playToken = 0;
+var lastSpoken = null;               // for the "Say it" button
+
+function slugOf(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function paintClip(id) { return 'paints/' + id + '.m4a'; }
+function uiClip(key) { return 'ui/' + key + '.m4a'; }
+function resultClip(name) {
+  return 'results/' + slugOf(name) + '-' + (Math.random() < 0.5 ? 0 : 1) + '.m4a';
 }
-if ('speechSynthesis' in window) {
-  pickVoice();
-  speechSynthesis.onvoiceschanged = pickVoice;
-}
-function speak(text) {
-  if (!soundOn || !text || !('speechSynthesis' in window)) return;
+
+function initAudio() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
   try {
-    speechSynthesis.cancel();           // iOS stalls if utterances queue up
+    audioCtx = new AC();
+    gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+  } catch (e) { audioCtx = null; }
+}
+
+function loadClip(rel) {
+  if (Object.prototype.hasOwnProperty.call(buffers, rel)) return Promise.resolve(buffers[rel]);
+  return fetch('voice/' + rel).then(function (r) {
+    if (!r.ok) throw new Error('missing');
+    return r.arrayBuffer();
+  }).then(function (raw) {
+    return new Promise(function (resolve, reject) {
+      audioCtx.decodeAudioData(raw, resolve, reject);   // callback form for older Safari
+    });
+  }).then(function (buf) {
+    buffers[rel] = buf; return buf;
+  }).catch(function () { buffers[rel] = null; return null; });
+}
+
+function stopSources() {
+  sources.forEach(function (s) { try { s.stop(); } catch (e) {} });
+  sources = [];
+}
+
+function speakFallback(text) {
+  if (!text || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.15; u.volume = 1;
-    if (voice) u.voice = voice;
+    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.15;
     speechSynthesis.speak(u);
   } catch (e) {}
+}
+
+/* Play a run of clips back to back. `text` is both the screen-reader line and
+   the fallback if the clips cannot be loaded. */
+function say(clips, text) {
+  lastSpoken = { clips: clips, text: text };
   var live = document.getElementById('live');
-  if (live) live.textContent = text;
+  if (live && text) live.textContent = text;
+  if (!soundOn) return;
+  if (!audioCtx) { speakFallback(text); return; }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  var token = ++playToken;
+  stopSources();
+  Promise.all(clips.map(loadClip)).then(function (bufs) {
+    if (token !== playToken) return;                 // a newer line took over
+    if (!bufs.some(Boolean)) { speakFallback(text); return; }
+    var t = audioCtx.currentTime + 0.04;
+    bufs.forEach(function (buf) {
+      if (!buf) return;
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(gainNode);
+      src.start(t);
+      sources.push(src);
+      t += buf.duration + CLIP_GAP;
+    });
+  });
+}
+
+function sayAgain() { if (lastSpoken) say(lastSpoken.clips, lastSpoken.text); }
+
+/* Warm the cache in the background: the words she can tap first, then the rest. */
+function preloadVoice() {
+  if (!audioCtx) return;
+  var urgent = PAINTS.map(function (p) { return paintClip(p.id); })
+    .concat(['welcome', 'reset', 'sound-on', 'album', 'missions', 'mission-complete',
+             'two-colors', 'three-colors', 'pick-one-more'].map(uiClip));
+  var rest = [];
+  NAMES.forEach(function (n) {
+    rest.push('results/' + slugOf(n[0]) + '-0.m4a', 'results/' + slugOf(n[0]) + '-1.m4a');
+  });
+  var queue = urgent.concat(rest), i = 0;
+  (function next() {
+    if (i >= queue.length) return;
+    var batch = queue.slice(i, i + 6); i += 6;
+    Promise.all(batch.map(loadClip)).then(function () { setTimeout(next, 30); });
+  })();
 }
 
 /* ---------------------------------------------------------------- state */
@@ -235,7 +310,7 @@ var current = null;               // { hex, name, emoji, ids }
 var $ = function (id) { return document.getElementById(id); };
 var els = {};
 
-function filled() { return slots.filter(Boolean); }
+function filled() { return slots.slice(0, mode).filter(Boolean); }
 
 function recompute() {
   var ids = filled();
@@ -327,8 +402,9 @@ function flyDrop(fromEl, toEl, hex) {
 /* --------------------------------------------------------------- actions */
 
 function addPaint(id, sourceEl) {
-  var slot = slots.indexOf(null);
-  if (slot === -1) { slots = [id, null, null]; slot = 0; }
+  var slot = -1;
+  for (var i = 0; i < mode; i++) { if (!slots[i]) { slot = i; break; } }
+  if (slot === -1) { slots = [id, null, null]; slot = 0; }   // full, so start fresh
   else slots[slot] = id;
 
   recompute();
@@ -339,7 +415,7 @@ function addPaint(id, sourceEl) {
   var target = els.slots[slot];
 
   if (sourceEl) flyDrop(sourceEl, target, BY_ID[id].hex);
-  if (filled().length < 2) speak(BY_ID[id].name);
+  if (filled().length < 2) say([paintClip(id)], BY_ID[id].name);
 
   setTimeout(function () {
     render();
@@ -348,7 +424,7 @@ function addPaint(id, sourceEl) {
     els.bowl.classList.remove('swirl'); void els.bowl.offsetWidth; els.bowl.classList.add('swirl');
     els.label.classList.remove('bounce'); void els.label.offsetWidth; els.label.classList.add('bounce');
     if (outcome.fresh || outcome.won.length) sparkle();
-    speak(sentence() + (outcome.won.length ? ' Mission complete!' : ''));
+    sayMix(snap, outcome.won.length > 0);
   }, sourceEl ? 340 : 0);
 }
 
@@ -380,18 +456,38 @@ function clearSlot(i) {
   recompute(); render();
 }
 
+/* "Blue. Yellow. That's green!" — the paints she picked, then the answer. */
+function sayMix(mix, won) {
+  if (!mix) return;
+  var clips = mix.ids.map(paintClip);
+  clips.push(resultClip(mix.name));
+  if (won) clips.push(uiClip('mission-complete'));
+  say(clips, sentence() + (won ? ' Mission complete!' : ''));
+}
+
 function reset() {
   slots = [null, null, null]; current = null;
   render();
-  speak('Start over.');
+  say([uiClip('reset')], "Let's start over!");
+}
+
+function setMode(next, announce) {
+  mode = next === 2 ? 2 : 3;
+  save(K_MODE, mode);
+  document.body.setAttribute('data-mode', String(mode));
+  if (mode === 2 && slots[2]) { slots[2] = null; recompute(); }
+  render();
+  if (announce) say([uiClip(mode === 2 ? 'two-colors' : 'three-colors')],
+                    mode === 2 ? 'Two colors!' : 'Three colors!');
 }
 
 function loadRecipe(ids) {
   slots = [ids[0] || null, ids[1] || null, ids[2] || null];
+  if (ids.length > 2) setMode(3, false);
   recompute(); recordMix(current); render();
   closeSheet();
   els.bowl.classList.remove('swirl'); void els.bowl.offsetWidth; els.bowl.classList.add('swirl');
-  speak(sentence());
+  sayMix(current, false);
 }
 
 /* ---------------------------------------------------------------- sheets */
@@ -427,7 +523,7 @@ function showAlbum() {
     var btn = e.target.closest ? e.target.closest('.found') : null;
     if (btn) loadRecipe(btn.dataset.ids.split(','));
   });
-  speak('You found ' + keys.length + ' colors!');
+  say([uiClip('album')], 'Here are the colors you found!');
 }
 
 function showMissions() {
@@ -439,7 +535,7 @@ function showMissions() {
       '<span class="ms">' + (done ? '✓ found it!' : m.hint) + '</span></span></div>';
   }).join('') + '</div>';
   openSheet('Missions (' + Object.keys(missionsDone).length + ' of ' + MISSIONS.length + ')', html);
-  speak('Can you make these colors?');
+  say([uiClip('missions')], 'Can you make these colors?');
 }
 
 /* ------------------------------------------------------------------ boot */
@@ -471,9 +567,10 @@ function init() {
     if (btn) addPaint(btn.dataset.id, btn.querySelector('.chip'));
   });
   els.slots.forEach(function (el, i) { el.addEventListener('click', function () { clearSlot(i); }); });
+  $('btn-mode').addEventListener('click', function () { setMode(mode === 2 ? 3 : 2, true); });
 
   $('btn-reset').addEventListener('click', reset);
-  els.say.addEventListener('click', function () { if (current) speak(sentence()); });
+  els.say.addEventListener('click', sayAgain);
   $('btn-album').addEventListener('click', showAlbum);
   $('btn-missions').addEventListener('click', showMissions);
   $('sheet-close').addEventListener('click', closeSheet);
@@ -484,8 +581,11 @@ function init() {
     save(K_SOUND, soundOn);
     els.soundBtn.setAttribute('aria-pressed', String(soundOn));
     els.soundIcon.textContent = soundOn ? '🔊' : '🔇';
-    if (soundOn) speak('Sound on!');
-    else if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (soundOn) say([uiClip('sound-on')], 'Sound on!');
+    else {
+      stopSources();
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+    }
   });
   els.soundBtn.setAttribute('aria-pressed', String(soundOn));
   els.soundIcon.textContent = soundOn ? '🔊' : '🔇';
@@ -495,12 +595,15 @@ function init() {
     $('splash').classList.add('gone');
     $('app').hidden = false;
     setTimeout(function () { $('splash').remove(); }, 500);
-    pickVoice();
-    speak('Tap two colors to mix them!');
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    say([uiClip('welcome')], 'Tap two colors to mix them!');
+    preloadVoice();
     render();
   });
 
   document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  setMode(mode, false);
   render();
 }
 
