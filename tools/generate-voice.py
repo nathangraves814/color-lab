@@ -19,7 +19,9 @@ Then:
     .venv/bin/python tools/generate-voice.py --voice af_heart
 
 Swap --voice for any of Kokoro's 54 (af_bella, af_nicole, af_sarah, bf_emma, bf_alice...)
-to re-cut the whole pack in a different voice.
+to re-cut the whole pack in a different voice. Adding one phrase does not need a
+full re-cut: --only ui/four-colors.m4a renders just that clip and adds it to the
+existing manifest.
 
 NOTE: do not use espeak for phonemes. The espeakng-loader wheel is broken on macOS
 arm64 (it ignores every data-path override and hard-exits), which is why this uses
@@ -44,6 +46,7 @@ UI_PHRASES = {
     'pick-one-more':    "Pick one more!",
     'two-colors':       "Two colors!",
     'three-colors':     "Three colors!",
+    'four-colors':      "Four colors!",
 }
 # Two readings of every result so a hundredth mix does not sound like the first.
 RESULT_TEMPLATES = ["That's {}!", "You made {}!"]
@@ -102,6 +105,8 @@ def main():
     ap.add_argument('--model', default=os.path.join(ROOT, 'kokoro-v1.0.onnx'))
     ap.add_argument('--voices', default=os.path.join(ROOT, 'voices-v1.0.bin'))
     ap.add_argument('--outdir', default=os.path.join(ROOT, 'voice'))
+    ap.add_argument('--only', nargs='+', metavar='PATH',
+                    help='re-cut just these clips (e.g. ui/four-colors.m4a) and keep the rest')
     args = ap.parse_args()
 
     for p in (args.model, args.voices):
@@ -122,6 +127,12 @@ def main():
             jobs.append(('results/%s-%d.m4a' % (slug(cname), i), tpl.format(cname)))
     for key, text in UI_PHRASES.items():
         jobs.append(('ui/%s.m4a' % key, text))
+
+    if args.only:
+        unknown = set(args.only) - set(rel for rel, _ in jobs)
+        if unknown:
+            sys.exit('Not a clip this app uses: %s' % ', '.join(sorted(unknown)))
+        jobs = [j for j in jobs if j[0] in args.only]
 
     tmp = os.path.join(args.outdir, '_tmp.wav')
     os.makedirs(args.outdir, exist_ok=True)
@@ -159,6 +170,10 @@ def main():
             print('  %d/%d' % (n, len(jobs)), flush=True)
     os.remove(tmp)
 
+    if args.only:
+        # A partial run adds to the pack on disk instead of replacing its manifest.
+        with open(os.path.join(args.outdir, 'manifest.json')) as f:
+            written = sorted(set(json.load(f)['files']) | set(written))
     manifest = {'voice': args.voice, 'files': sorted(written)}
     with open(os.path.join(args.outdir, 'manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=1)

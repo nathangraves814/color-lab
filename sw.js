@@ -7,7 +7,7 @@
    The earlier version cached everything cache-first, which meant a phone that had
    loaded the app once would keep running that build forever. */
 
-var VERSION = '1.4.1';
+var VERSION = '1.5.0';
 var CACHE = 'color-lab-' + VERSION;
 
 var SHELL = [
@@ -35,9 +35,12 @@ self.addEventListener('install', function (e) {
   }).then(function () { return self.skipWaiting(); }));
 });
 
+/* Only sweep this app's own old caches. Potion Lab and Instrument Mixer share the
+   nathangraves814.github.io origin, so deleting every other cache wiped their
+   offline copies each time Color Lab updated. */
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== CACHE; })
+    return Promise.all(keys.filter(function (k) { return k.indexOf('color-lab-') === 0 && k !== CACHE; })
       .map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });

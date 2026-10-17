@@ -41,10 +41,10 @@
   <main>
     <section class="stage">
       <div class="mode-toggle">
-        <button id="btn-mode" class="mode" aria-label="Switch between two and three colors">
-          <span class="mode-opt" data-n="2">2</span><span class="mode-opt" data-n="3">3</span>
+        <div id="mode" class="mode" role="group" aria-label="How many colors to mix">
+          <button class="mode-opt" data-n="2" aria-label="Two colors">2</button><button class="mode-opt" data-n="3" aria-label="Three colors">3</button><button class="mode-opt" data-n="4" aria-label="Four colors">4</button>
           <span class="mode-thumb" aria-hidden="true"></span>
-        </button>
+        </div>
       </div>
 
       <div class="stage-center">
@@ -52,8 +52,10 @@
           <button class="slot" data-i="0" aria-label="First color"></button>
           <span class="op">+</span>
           <button class="slot" data-i="1" aria-label="Second color"></button>
-          <span class="op op-optional">+</span>
-          <button class="slot optional" data-i="2" aria-label="Third color (optional)"></button>
+          <span class="op op-optional opt3">+</span>
+          <button class="slot optional opt3" data-i="2" aria-label="Third color (optional)"></button>
+          <span class="op op-optional opt4">+</span>
+          <button class="slot optional opt4" data-i="3" aria-label="Fourth color (optional)"></button>
         </div>
 
         <div class="result">

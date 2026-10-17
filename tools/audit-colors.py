@@ -25,6 +25,9 @@ assert len(paints)==24 and len(CORNERS)==8, (len(paints), len(CORNERS))
 CORE = set(re.search(r"var CORE = '([^']+)'", src).group(1).split())
 fam_src = re.search(r"var FAMILIAR = \((.*?)\)\.split\(','\);", src, re.S).group(1)
 FAM = set(x for part in re.findall(r"'([^']*)'", fam_src) for x in part.split(',') if x)
+# The kid-familiar-word bonus, read from nameOf's table so the audit cannot drift from it.
+CORE_BONUS, FAM_BONUS = (float(x) for x in re.search(
+    r"CORE\.indexOf\(n\[0\]\) >= 0 \? ([\d.]+) : \(FAMILIAR\.indexOf\(n\[0\]\) >= 0 \? ([\d.]+)", src).groups())
 ACHRO = set(x.strip().strip("'") for x in re.findall(r"([a-z' ]+):1", re.search(r"var ACHRO_SET = \{([^}]+)\}", src).group(1)))
 
 SHADE=[0.07,0.06,0.07]
@@ -54,7 +57,7 @@ def lab(rgb):
     def k(t): return t**(1/3) if t>0.008856 else 7.787*t+16/116
     fx,fy,fz=k(X),k(Y),k(Z); return (116*fy-16,500*(fx-fy),200*(fy-fz))
 NAMED=[{'name':n,'lab':lab(h2rgb(h)),'emoji':e,
-        'bonus': 8.0 if n in CORE else (5.0 if n in FAM else 0.0)} for n,h,e in names]
+        'bonus': CORE_BONUS if n in CORE else (FAM_BONUS if n in FAM else 0.0)} for n,h,e in names]
 def dE(a,b): return sum((a[i]-b[i])**2 for i in range(3))**0.5
 def name_of(rgb, banned=None):
     L=lab(rgb); chroma=(L[1]**2+L[2]**2)**0.5
@@ -69,19 +72,24 @@ def name_of(rgb, banned=None):
 
 BY={p['id']:p for p in paints}
 ids=[p['id'] for p in paints]
-violations=[]; counts=collections.Counter(); rows=[]
-for r in (2,3):
+violations=[]; counts=collections.Counter(); rows=[]; by_size=collections.defaultdict(collections.Counter)
+for r in (2,3,4):
     for combo in itertools.combinations(ids,r):
         ps=[BY[i] for i in combo]
         banned=set(p['name'] for p in ps)
         rgb=mix(ps); nm=name_of(rgb, banned)
-        counts[nm]+=1; rows.append((combo,hexs(rgb),nm))
+        counts[nm]+=1; by_size[r][nm]+=1; rows.append((combo,hexs(rgb),nm))
         if nm in banned: violations.append((combo,nm))
 print("combos tested:", len(rows))
 print("named after an ingredient:", len(violations), violations[:5])
 print("distinct names used:", len(counts), "of", len(names))
 print("unused:", sorted(set(n for n,_,_ in names)-set(counts)))
 print("most common:", counts.most_common(10))
+# More paints pull toward brown and beige; this is the number a ratio mode would move.
+for r in (2,3,4):
+    c=by_size[r]; tot=sum(c.values())
+    print("  %d paints: %5d mixes, %3d names, top: %s" % (r, tot, len(c),
+          ', '.join('%s %d%%' % (n, round(100*k/tot)) for n,k in c.most_common(4))))
 print()
 anchors=[(('red','yellow'),'orange'),(('blue','yellow'),'green'),(('red','blue'),'purple'),
  (('red','white'),'pink'),(('white','black'),'gray'),(('red','yellow','blue'),None),

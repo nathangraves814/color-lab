@@ -160,25 +160,31 @@ main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:clamp(4px
   *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
 }
 
-/* ---------- 2 / 3 colour toggle ---------- */
+/* ---------- 2 / 3 / 4 colour picker ---------- */
 .mode-toggle{flex:0 0 auto;display:flex;justify-content:center;
   padding:clamp(2px,0.8vh,10px) 0 clamp(8px,2vh,24px);}
 .mode{position:relative;display:flex;align-items:center;gap:0;background:var(--card);
   border-radius:999px;box-shadow:var(--shadow);padding:5px;isolation:isolate;}
 .mode-opt{position:relative;z-index:1;width:clamp(48px,6.8vmin,66px);
   line-height:clamp(43px,6.1vmin,59px);text-align:center;font-weight:900;
-  font-size:clamp(21px,3.5vmin,32px);color:var(--muted);transition:color .2s;}
+  font-size:clamp(21px,3.5vmin,32px);color:var(--muted);transition:color .2s,transform .16s;}
+.mode-opt:active{transform:translateY(2px);}
 .mode-thumb{position:absolute;z-index:0;top:5px;left:5px;
   width:clamp(48px,6.8vmin,66px);height:clamp(43px,6.1vmin,59px);
   border-radius:999px;background:var(--accent);
   transition:transform .24s cubic-bezier(.3,1.5,.5,1);}
-.mode:active{transform:translateY(2px);}
 body[data-mode="2"] .mode-opt[data-n="2"],
-body[data-mode="3"] .mode-opt[data-n="3"]{color:#fff;}
+body[data-mode="3"] .mode-opt[data-n="3"],
+body[data-mode="4"] .mode-opt[data-n="4"]{color:#fff;}
 body[data-mode="3"] .mode-thumb{transform:translateX(100%);}
-/* two-colour mode hides the third slot and its plus sign */
-body[data-mode="2"] .slot.optional,
-body[data-mode="2"] .op-optional{display:none;}
+body[data-mode="4"] .mode-thumb{transform:translateX(200%);}
+/* fewer colours hide the slots (and plus signs) they do not use */
+body[data-mode="2"] .opt3,
+body[data-mode="2"] .opt4,
+body[data-mode="3"] .opt4{display:none;}
+/* four slots and three plus signs have to fit a phone held upright */
+body[data-mode="4"]{--slot:clamp(56px,9vmin,96px);}
+body[data-mode="4"] .recipe{gap:clamp(4px,1vmin,14px);}
 
 /* ---------- build stamp ---------- */
 /* Sits above the splash too, so the version is readable before tapping in.

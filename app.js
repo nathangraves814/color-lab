@@ -7,7 +7,7 @@
 /* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
    dropped. This string is rendered bottom-right: if it has not changed on the
    device, the device is still running the old build. */
-var VERSION = 'v1.4.1';
+var VERSION = 'v1.5.0';
 
 /* ---------------------------------------------------------------- mixing */
 
@@ -218,7 +218,9 @@ function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value
 var album = load(K_ALBUM, {});
 var missionsDone = load(K_MISSIONS, {});
 var soundOn = load(K_SOUND, true);
-var mode = load(K_MODE, 3) === 2 ? 2 : 3;   // how many colours she can stack
+var MODES = [2, 3, 4];
+function validMode(n) { return MODES.indexOf(n) >= 0 ? n : 3; }
+var mode = validMode(load(K_MODE, 3));   // how many colours she can stack
 
 /* ---------------------------------------------------------------- voice */
 /* Pre-recorded clips, not live synthesis. iOS Safari hides its good voices from
@@ -307,7 +309,7 @@ function preloadVoice() {
   if (!audioCtx) return;
   var urgent = PAINTS.map(function (p) { return paintClip(p.id); })
     .concat(['welcome', 'reset', 'sound-on', 'album', 'missions', 'mission-complete',
-             'two-colors', 'three-colors', 'pick-one-more'].map(uiClip));
+             'two-colors', 'three-colors', 'four-colors', 'pick-one-more'].map(uiClip));
   var rest = [];
   NAMES.forEach(function (n) {
     rest.push('results/' + slugOf(n[0]) + '-0.m4a', 'results/' + slugOf(n[0]) + '-1.m4a');
@@ -322,7 +324,9 @@ function preloadVoice() {
 
 /* ---------------------------------------------------------------- state */
 
-var slots = [null, null, null];   // paint ids
+var MAX_SLOTS = 4;
+function emptySlots() { return [null, null, null, null]; }
+var slots = emptySlots();   // paint ids
 var current = null;               // { hex, name, emoji, ids }
 
 var $ = function (id) { return document.getElementById(id); };
@@ -356,9 +360,7 @@ function sentence() {
   var names = current.ids.map(function (id) { return BY_ID[id].name; });
   var distinct = names.filter(function (v, i) { return names.indexOf(v) === i; });
   if (distinct.length === 1) return 'Still ' + current.name + '!';
-  var list = names.length === 2
-    ? names[0] + ' and ' + names[1]
-    : names[0] + ', ' + names[1] + ' and ' + names[2];
+  var list = names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
   return list + ' make ' + current.name + '!';
 }
 
@@ -435,7 +437,7 @@ function flyDrop(fromEl, toEl, hex) {
 function addPaint(id, sourceEl) {
   var slot = -1;
   for (var i = 0; i < mode; i++) { if (!slots[i]) { slot = i; break; } }
-  if (slot === -1) { slots = [id, null, null]; slot = 0; }   // full, so start fresh
+  if (slot === -1) { slots = emptySlots(); slots[0] = id; slot = 0; }   // full, so start fresh
   else slots[slot] = id;
 
   recompute();
@@ -485,7 +487,7 @@ function recordMix(mix) {
 function clearSlot(i) {
   if (!slots[i]) return;
   slots[i] = null;
-  slots = [slots[0], slots[1], slots[2]].filter(Boolean).concat([null, null, null]).slice(0, 3);
+  slots = slots.filter(Boolean).concat(emptySlots()).slice(0, MAX_SLOTS);
   recompute(); render();
 }
 
@@ -513,24 +515,30 @@ function sayMix(mix, won) {
 }
 
 function reset() {
-  slots = [null, null, null]; current = null;
+  slots = emptySlots(); current = null;
   render();
   say([uiClip('reset')], "Let's start over!");
 }
 
+var MODE_WORDS = { 2: 'two', 3: 'three', 4: 'four' };
+
 function setMode(next, announce) {
-  mode = next === 2 ? 2 : 3;
+  mode = validMode(next);
   save(K_MODE, mode);
   document.body.setAttribute('data-mode', String(mode));
-  if (mode === 2 && slots[2]) { slots[2] = null; recompute(); }
+  // Paints in slots this mode hides would otherwise still count toward the mix.
+  var dropped = false;
+  for (var i = mode; i < MAX_SLOTS; i++) { if (slots[i]) { slots[i] = null; dropped = true; } }
+  if (dropped) recompute();
   render();
-  if (announce) say([uiClip(mode === 2 ? 'two-colors' : 'three-colors')],
-                    mode === 2 ? 'Two colors!' : 'Three colors!');
+  var word = MODE_WORDS[mode];
+  if (announce) say([uiClip(word + '-colors')], word.charAt(0).toUpperCase() + word.slice(1) + ' colors!');
 }
 
 function loadRecipe(ids) {
-  slots = [ids[0] || null, ids[1] || null, ids[2] || null];
-  if (ids.length > 2) setMode(3, false);
+  slots = emptySlots();
+  ids.slice(0, MAX_SLOTS).forEach(function (id, i) { slots[i] = id; });
+  if (ids.length > mode) setMode(ids.length, false);
   recompute(); recordMix(current); render();
   closeSheet();
   els.bowl.classList.remove('swirl'); void els.bowl.offsetWidth; els.bowl.classList.add('swirl');
@@ -618,7 +626,9 @@ function init() {
     if (btn) addPaint(btn.dataset.id, btn.querySelector('.chip'));
   });
   els.slots.forEach(function (el, i) { el.addEventListener('click', function () { clearSlot(i); }); });
-  $('btn-mode').addEventListener('click', function () { setMode(mode === 2 ? 3 : 2, true); });
+  [].forEach.call(document.querySelectorAll('.mode-opt'), function (el) {
+    el.addEventListener('click', function () { setMode(+el.dataset.n, true); });
+  });
 
   $('btn-reset').addEventListener('click', reset);
   els.say.addEventListener('click', function () { sayMix(current, false); });
