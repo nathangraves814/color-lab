@@ -7,7 +7,10 @@ either table:
 
     python3 tools/audit-colors.py
 
-The number that must stay at zero is "named after an ingredient".
+The number that must stay at zero is "named after an ingredient". It is checked
+twice: over every free mix of two to four paints, and over counted recipes (every
+pair at 4:1 through 1:4), which end with the lesson ladders from the research
+packet. The script exits 1 if either count is not zero.
 """
 import re, itertools, collections, json, sys
 src = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.dirname(__import__('os').path.abspath(__file__))),'app.js'), encoding='utf-8').read()
@@ -52,7 +55,7 @@ def mix(ps):
     c=[v*(sum(si*max(p['c']) for si,p in ch)/cw)/peak for v in c]
     rgb=ryb2rgb(*c)
     d=max(0.0, neutral(c)-sum(si*neutral(p['c']) for si,p in ch)/cw)
-    m=MUTE*4*d*(1-d)
+    m=MUTE*d**0.5*(1-d)**1.5/0.3248
     if m>0:
         y=0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2]; rgb=lerp(rgb,[y,y,y],m)
     return lerp(lerp(rgb,[1,1,1],w),SHADE,k)
@@ -138,3 +141,39 @@ for combo in itertools.combinations(ids,2):
     ps=[BY[i] for i in combo]
     print('  %-26s %s -> %s' % (' + '.join(combo), hexs(mix(ps)),
           name_of(mix(ps), set(p['name'] for p in ps))))
+
+# --- counted recipes, the way a ratio mode would build them ---
+# A recipe repeats a paint: (red, 4), (white, 1) is four red drops and one white.
+# Every pair of paints at each ratio, capped at 4 drops of a colour.
+RATIOS=[(4,1),(2,1),(1,1),(1,2),(1,4)]
+def recipe(a, na, b, nb):
+    ps=[BY[a]]*na+[BY[b]]*nb
+    rgb=mix(ps); return hexs(rgb), name_of(rgb, set(p['name'] for p in ps)), rgb
+ratio_violations=[]; ratio_count=0
+for a,b in itertools.combinations(ids,2):
+    for na,nb in RATIOS:
+        ratio_count+=1
+        h,nm,_=recipe(a,na,b,nb)
+        if nm in (BY[a]['name'],BY[b]['name']): ratio_violations.append((a,na,b,nb,nm))
+print("\n=== counted recipes ===")
+print("recipes tested: %d (every pair at %s)" % (ratio_count, ', '.join('%d:%d'%r for r in RATIOS)))
+print("named after an ingredient:", len(ratio_violations), ratio_violations[:5])
+violations += ratio_violations
+
+# The lesson ladders from research/color-education-packet.md section 8.5: one start
+# colour, a second colour added at each ratio (start : added).
+LADDERS=[('red','white'),('red','black'),('red','yellow'),('red','blue'),('red','green'),
+ ('yellow','white'),('yellow','black'),('yellow','red'),('yellow','blue'),('yellow','purple'),
+ ('blue','white'),('blue','black'),('blue','yellow'),('blue','red'),('blue','orange'),
+ ('green','white'),('green','black'),('green','yellow'),('green','blue'),('green','red'),
+ ('orange','white'),('orange','black'),('orange','yellow'),('orange','red'),('orange','blue'),
+ ('purple','white'),('purple','black'),('purple','red'),('purple','blue'),('purple','yellow')]
+print("\n  %-16s %s" % ('start + added', '   '.join('%-20s' % ('%d:%d' % r) for r in RATIOS)))
+for a,b in LADDERS:
+    cells=[]
+    for na,nb in RATIOS:
+        h,nm,_=recipe(a,na,b,nb); cells.append('%-12s %s' % (nm, h))
+    print("  %-16s %s" % (a+' + '+b, '  '.join(cells)))
+
+if violations:
+    sys.exit(1)

@@ -7,7 +7,7 @@
 /* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
    dropped. This string is rendered bottom-right: if it has not changed on the
    device, the device is still running the old build. */
-var VERSION = 'v1.6.0';
+var VERSION = 'v1.7.0';
 
 /* ---------------------------------------------------------------- mixing */
 
@@ -42,10 +42,12 @@ function lerp(a, b, t) { return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b
    hue 1x). White and black stay equal so white + black is still a middle gray. */
 var TINT_STRENGTH = 1.5;
 /* Opposite colours cancel toward gray, so a little red dulls green rather than just
-   darkening it. MUTE is how far toward gray a mix goes at the worst point. Full
-   cancellation is left alone, so red + yellow + blue (and any 1:1 pair of opposites)
-   still makes brown. */
-var MUTE = 0.35;
+   darkening it (Golden's 4 green : 1 red is a muted green). MUTE is how far toward
+   gray a mix goes at the worst point, which is a small dose of the opposite: 4 : 1,
+   a quarter of the way to full cancellation. Bigger doses mostly darken instead,
+   and full cancellation is left alone, so red + yellow + blue (and any 1:1 pair of
+   opposites) still makes brown. */
+var MUTE = 0.43;
 
 function neutralShare(c) {   // 0 for a pure hue, 1 when all three primaries are equal
   var m = Math.max(c[0], c[1], c[2]);
@@ -77,9 +79,10 @@ function mixPaints(paints) {
   var rgb = rybToRgb(c[0], c[1], c[2]);
 
   // How much more neutral the mix is than its paints were: zero when nothing
-  // cancelled (red + yellow, or brown + brown), largest partway to full cancellation.
+  // cancelled (red + yellow, or brown + brown), 1 at full cancellation. The curve
+  // peaks at d = 0.25 (4 : 1 of opposites), where it equals MUTE.
   var d = Math.max(0, neutralShare(c) - chromaNeutral / chromaWeight);
-  var mute = MUTE * 4 * d * (1 - d);
+  var mute = MUTE * Math.sqrt(d) * Math.pow(1 - d, 1.5) / 0.3248;
   if (mute > 0) {
     var y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
     rgb = lerp(rgb, [y, y, y], mute);
@@ -150,7 +153,7 @@ var NAMES = [
   ['olive','#7d7a1e','🫒'],['chartreuse','#b5d61c','🦎'],['lime','#a8d41c','🍈'],
   ['pear green','#c4d44e','🍐'],['moss green','#7a8a3c','🌾'],['olive green','#5c6b24','🥬'],
   ['green','#12a148','🌿'],['grass green','#4caf28','🌱'],['apple green','#6faa25','🍏'],['light green','#7ed194','🍏'],
-  ['mint','#9adfb8','🍃'],['pale green','#cfeddd','🌱'],['sage','#a3b58c','🪴'],['fern green','#4e8c4a','🌿'],
+  ['mint','#9adfb8','🍃'],['pale green','#cfeddd','🌱'],['sage','#a3b58c','🪴'],['fern green','#4f7942','🌿'],
   ['dark green','#136b30','🌲'],['forest green','#1c4f26','🌳'],['teal','#127d8e','🐬'],
   ['turquoise','#31c0c4','🐠'],['aqua','#6fd8d4','💦'],['seafoam','#a8d8c8','🫧'],
   ['sea green','#1d9e7a','🌊'],['emerald','#12a67a','💎'],['jade','#4aa583','🪷'],
@@ -161,7 +164,7 @@ var NAMES = [
   ['violet','#5d2ea3','🔮'],['periwinkle','#9aa8e8','🦋'],['slate blue','#4a5c7d','🗿'],
   ['midnight blue','#141c3a','🌙'],['purple','#7a2a91','🍇'],['amethyst','#9a6bc4','💎'],
   ['light purple','#b98ac6','🪻'],['lilac','#c3a3d8','🪻'],['lavender','#cdb4de','💜'],
-  ['mauve','#a58399','🌫️'],['grape','#4e1f6b','🍇'],['eggplant','#4a2352','🍆'],
+  ['mauve','#a58399','🌫️'],['grape','#4e1f6b','🍇'],['dark purple','#2e1440','🟣'],['eggplant','#4a2352','🍆'],
   ['magenta','#c2185b','💐'],['fuchsia','#d6449b','💗'],['hot pink','#f0428c','💗'],
   ['orchid','#bd62c4','🌸'],['raspberry','#b0295c','🫐'],['plum','#6e2a55','🫐'],
   ['wine','#5e1f36','🍷'],['brown','#8a5228','🐻'],['light brown','#b5804f','🪵'],
