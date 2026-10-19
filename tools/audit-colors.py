@@ -38,13 +38,23 @@ def ryb2rgb(r,y,b):
         o[0]+=w*c[3]; o[1]+=w*c[4]; o[2]+=w*c[5]
     return o
 def lerp(a,b,t): return [a[i]+(b[i]-a[i])*t for i in range(3)]
+TINT = float(re.search(r"var TINT_STRENGTH = ([\d.]+);", src).group(1))
+MUTE = float(re.search(r"var MUTE = ([\d.]+);", src).group(1))
+def neutral(c):
+    m=max(c); return min(c)/m if m>1e-6 else 0.0
 def mix(ps):
-    n=len(ps); c=[sum(p['c'][i] for p in ps)/n for i in range(3)]
-    w=sum(p['w'] for p in ps)/n; k=sum(p['k'] for p in ps)/n
-    ch=[p for p in ps if max(p['c'])>1e-6]; peak=max(c)
-    if ch and peak>1e-6:
-        t=sum(max(p['c']) for p in ch)/len(ch); c=[v*(t/peak) for v in c]
-    rgb = ryb2rgb(*c) if peak>1e-6 else [1.0,1.0,1.0]
+    s=[1+(TINT-1)*(p['w']+p['k']) for p in ps]; S=sum(s)
+    c=[sum(si*p['c'][i] for si,p in zip(s,ps))/S for i in range(3)]
+    w=sum(si*p['w'] for si,p in zip(s,ps))/S; k=sum(si*p['k'] for si,p in zip(s,ps))/S
+    ch=[(si,p) for si,p in zip(s,ps) if max(p['c'])>1e-6]; peak=max(c)
+    if peak<=1e-6: return lerp([1,1,1],SHADE,k)
+    cw=sum(si for si,_ in ch)
+    c=[v*(sum(si*max(p['c']) for si,p in ch)/cw)/peak for v in c]
+    rgb=ryb2rgb(*c)
+    d=max(0.0, neutral(c)-sum(si*neutral(p['c']) for si,p in ch)/cw)
+    m=MUTE*4*d*(1-d)
+    if m>0:
+        y=0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2]; rgb=lerp(rgb,[y,y,y],m)
     return lerp(lerp(rgb,[1,1,1],w),SHADE,k)
 def hexs(r): return '#%02x%02x%02x'%tuple(max(0,min(255,round(v*255))) for v in r)
 def h2rgb(h):
@@ -74,9 +84,10 @@ BY={p['id']:p for p in paints}
 ids=[p['id'] for p in paints]
 violations=[]; counts=collections.Counter(); rows=[]; by_size=collections.defaultdict(collections.Counter)
 for r in (2,3,4):
-    for combo in itertools.combinations(ids,r):
+    for combo in itertools.combinations_with_replacement(ids,r):
         ps=[BY[i] for i in combo]
         banned=set(p['name'] for p in ps)
+        if len(banned)==1: banned=set()   # a paint with itself keeps its own name
         rgb=mix(ps); nm=name_of(rgb, banned)
         counts[nm]+=1; by_size[r][nm]+=1; rows.append((combo,hexs(rgb),nm))
         if nm in banned: violations.append((combo,nm))

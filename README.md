@@ -24,6 +24,22 @@ Each paint is stored as a pigment recipe: an RYB chroma vector plus separate whi
 the hue stays as strong as the paints that went in, converts RYB to RGB by trilinear
 blending between eight tuned cube corners, then applies the tint and shade.
 
+Repeating a paint is how a ratio is written: red, white, white, white is one red to
+three white. Two things make those ratios behave like real paint (v1.6.0):
+
+- **White and black are strong.** A paint's pull on the mix grows with how much white
+  or black is in it, up to 1.5x for pure white or black (`TINT_STRENGTH`). One drop of
+  black in three of red already makes crimson, and red + black alone goes to maroon.
+  White and black are equal, so white + black stays a middle gray.
+- **Opposites dull each other.** When the paints cancel toward neutral, the mix is
+  pulled toward gray (`MUTE`), most strongly partway to full cancellation. Three green
+  and one red gives a dull dark green instead of a bright one. Full cancellation is left
+  alone, so red + yellow + blue, and any 1:1 pair of opposites, still makes brown.
+
+Pure hues all have equal strength, so blue + yellow is still the textbook green. Real
+blue overpowers yellow; making it stronger would move the 1:1 anchors the missions
+depend on, so that is left as a decision for ratio mode.
+
 Result names come from a list of 121 colours that walks the 12-hue RYB wheel (red,
 vermilion, orange, amber, yellow, chartreuse, green, teal, blue, indigo, purple,
 magenta) and gives each hue a tint, a shade and a muted tone, plus browns and neutrals.
@@ -35,9 +51,9 @@ Without that rule the nearest name for red + orange is "red", which teaches her 
 those names are struck from the running so the mix has to resolve to a third word
 (vermilion). Mixing a paint with itself is not a mix, so it keeps its own name.
 
-`tools/audit-colors.py` checks this over all 12,926 two-, three- and four-paint
-combinations, and reports how often each name comes up at each size. Piling on more
-paints pulls mixes toward clay, taupe and dusty rose, which is expected pigment
+`tools/audit-colors.py` checks this over all 20,450 two-, three- and four-paint
+recipes, repeats included, and reports how often each name comes up at each size. Piling on more
+paints pulls mixes toward taupe, gray and dusty rose, which is expected pigment
 behaviour, not a bug.
 
 ## The voice

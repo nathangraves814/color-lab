@@ -7,7 +7,7 @@
 /* Bump on every deploy, and bump VERSION in sw.js to match so the old cache is
    dropped. This string is rendered bottom-right: if it has not changed on the
    device, the device is still running the old build. */
-var VERSION = 'v1.5.0';
+var VERSION = 'v1.6.0';
 
 /* ---------------------------------------------------------------- mixing */
 
@@ -36,26 +36,54 @@ function rybToRgb(r, y, b) {
 }
 function lerp(a, b, t) { return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 
+/* White and black are strong tinters: a dab changes a whole cup, so painters add
+   dark to light a little at a time. Each paint's pull on a mix grows with how much
+   white or black is in it (pure white or black pulls 1.5x, pink about 1.3x, a pure
+   hue 1x). White and black stay equal so white + black is still a middle gray. */
+var TINT_STRENGTH = 1.5;
+/* Opposite colours cancel toward gray, so a little red dulls green rather than just
+   darkening it. MUTE is how far toward gray a mix goes at the worst point. Full
+   cancellation is left alone, so red + yellow + blue (and any 1:1 pair of opposites)
+   still makes brown. */
+var MUTE = 0.35;
+
+function neutralShare(c) {   // 0 for a pure hue, 1 when all three primaries are equal
+  var m = Math.max(c[0], c[1], c[2]);
+  return m > 1e-6 ? Math.min(c[0], c[1], c[2]) / m : 0;
+}
+
 /* Mix any number of paints. Each paint is {c:[r,y,b], w:whiteAmount, k:blackAmount}.
-   The chroma vectors are averaged, then re-scaled back up so the hue stays as strong
-   as the paints that went in — otherwise every mix would drift pale toward white. */
+   Repeating a paint is how a ratio is written: red, white, white is 1 red : 2 white.
+   The chroma vectors are averaged by strength, then re-scaled back up so the hue
+   stays as strong as the paints that went in, otherwise every mix would drift pale
+   toward white. */
 function mixPaints(paints) {
-  var n = paints.length, c = [0, 0, 0], w = 0, k = 0, chromaticSum = 0, chromatic = 0;
+  var n = paints.length, c = [0, 0, 0], w = 0, k = 0, total = 0;
+  var chromaWeight = 0, chromaPeak = 0, chromaNeutral = 0;
   for (var i = 0; i < n; i++) {
-    var p = paints[i];
-    c[0] += p.c[0]; c[1] += p.c[1]; c[2] += p.c[2];
-    w += p.w || 0; k += p.k || 0;
+    var p = paints[i], pw = p.w || 0, pk = p.k || 0;
+    var s = 1 + (TINT_STRENGTH - 1) * (pw + pk);
+    c[0] += s * p.c[0]; c[1] += s * p.c[1]; c[2] += s * p.c[2];
+    w += s * pw; k += s * pk; total += s;
     var m = Math.max(p.c[0], p.c[1], p.c[2]);
-    if (m > 1e-6) { chromaticSum += m; chromatic++; }
+    if (m > 1e-6) { chromaWeight += s; chromaPeak += s * m; chromaNeutral += s * neutralShare(p.c); }
   }
-  c = [c[0]/n, c[1]/n, c[2]/n]; w /= n; k /= n;
+  c = [c[0]/total, c[1]/total, c[2]/total]; w /= total; k /= total;
 
   var peak = Math.max(c[0], c[1], c[2]);
-  if (chromatic > 0 && peak > 1e-6) {
-    var s = (chromaticSum / chromatic) / peak;
-    c = [c[0]*s, c[1]*s, c[2]*s];
+  if (peak <= 1e-6) return lerp([1, 1, 1], SHADE, k);   // only white, gray and black went in
+  var scale = (chromaPeak / chromaWeight) / peak;
+  c = [c[0]*scale, c[1]*scale, c[2]*scale];
+  var rgb = rybToRgb(c[0], c[1], c[2]);
+
+  // How much more neutral the mix is than its paints were: zero when nothing
+  // cancelled (red + yellow, or brown + brown), largest partway to full cancellation.
+  var d = Math.max(0, neutralShare(c) - chromaNeutral / chromaWeight);
+  var mute = MUTE * 4 * d * (1 - d);
+  if (mute > 0) {
+    var y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    rgb = lerp(rgb, [y, y, y], mute);
   }
-  var rgb = peak > 1e-6 ? rybToRgb(c[0], c[1], c[2]) : [1, 1, 1];
   return lerp(lerp(rgb, [1, 1, 1], w), SHADE, k);
 }
 
@@ -129,8 +157,8 @@ var NAMES = [
   ['pine green','#14574e','🌲'],['blue','#1a4fdb','💧'],['royal blue','#2247b8','👑'],['cobalt','#3a62c8','🔷'],
   ['cerulean','#2a7fc4','🌊'],['sky blue','#63b8e8','☁️'],['powder blue','#cfe0f2','🩵'],['light blue','#8ca9ee','🩵'],
   ['cornflower','#6f92e0','🌸'],['denim','#4a6fa0','👖'],['steel blue','#5a7fa5','🔩'],
-  ['dark blue','#152f77','🌌'],['navy','#10204f','⚓'],['indigo','#3a2a8c','🔮'],
-  ['violet','#6b34c4','🔮'],['periwinkle','#9aa8e8','🦋'],['slate blue','#4a5c7d','🗿'],
+  ['dark blue','#152f77','🌌'],['navy','#10204f','⚓'],['indigo','#4535a8','🔮'],
+  ['violet','#5d2ea3','🔮'],['periwinkle','#9aa8e8','🦋'],['slate blue','#4a5c7d','🗿'],
   ['midnight blue','#141c3a','🌙'],['purple','#7a2a91','🍇'],['amethyst','#9a6bc4','💎'],
   ['light purple','#b98ac6','🪻'],['lilac','#c3a3d8','🪻'],['lavender','#cdb4de','💜'],
   ['mauve','#a58399','🌫️'],['grape','#4e1f6b','🍇'],['eggplant','#4a2352','🍆'],
@@ -196,12 +224,12 @@ var MISSIONS = [
   { id:'green',  label:'Make green',      hint:'two colors', hex:'#00a140' },
   { id:'orange', label:'Make orange',     hint:'two colors', hex:'#fa7a08' },
   { id:'purple', label:'Make purple',     hint:'two colors', hex:'#75218c' },
-  { id:'pink',   label:'Make pink',       hint:'add white',  hex:'#f48b96' },
-  { id:'ltblue', label:'Make light blue', hint:'add white',  hex:'#8ca9ee' },
+  { id:'pink',   label:'Make pink',       hint:'add white',  hex:'#f6a2ab' },
+  { id:'ltblue', label:'Make light blue', hint:'add white',  hex:'#a3b9f1' },
   { id:'dkred',  label:'Make dark red',   hint:'add black',  hex:'#7d1320' },
   { id:'gray',   label:'Make gray',       hint:'two colors', hex:'#888788' },
   { id:'brown',  label:'Make brown',      hint:'try three!', hex:'#5c3b1c' },
-  { id:'olive',  label:'Make olive',      hint:'add black',  hex:'#887a0f' }
+  { id:'olive',  label:'Make olive',      hint:'add black',  hex:'#716510' }
 ];
 MISSIONS.forEach(function (m) { m.lab = rgbToLab(hexToRgb(m.hex)); });
 
